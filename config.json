@@ -1,0 +1,22 @@
+{
+  "log":{
+    "level":20
+  },
+  "rules":[
+    {
+      "groupRules": [
+        {
+          "groupName": "【比心】情窦初开❤️排麦群",
+          "sendOnlyOne":false,
+          "timeRanges": [
+            {"timeRange":"00:00:00-23:59:59","sendCcount": 0}
+          ],
+          "users": [
+            {"userName":"MarkBell","replyMsg":"收到MarkBell消息[憨笑][憨笑]"},
+            {"userName":"张鲁凡","replyMsg":"收到张鲁凡消息[憨笑][憨笑]"}
+          ]
+        }
+      ]
+    }
+  ]
+}
