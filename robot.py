@@ -1,30 +1,69 @@
+import re
 import itchat
 import logging
 import time
 import json
+import threading
 import robotui
+import utils,config
 logger = logging.getLogger()
 startNowYMD = time.strftime("%Y-%m-%d", time.localtime())
-try:
-    with open('config.json', encoding='utf-8') as config:
-        config = json.loads(config.read())
-        logging.basicConfig(level=config["log"]["level"],filename='info.log',filemode='w')
-except Exception as e:
-    logger.error("配置文件异常 %s" % e.args)
 
-@itchat.msg_register(itchat.content.INCOME_MSG, isGroupChat = True)
-def ListenMsgGroup(msg):
+def configByWxServerInfo(self):
     try:
-        result = vaildGroupsRules(msg,config)
-        if result:
-            loginfo="接收到需要自动回复消息----"+"接收时间"+time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"发送人："+msg["ActualNickName"]
-            printfInfo(loginfo)
-            itchat.send(result, msg['FromUserName'])
-            loginfo="回复消息----"+"回复时间"+time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"消息内容："+result
-            printfInfo(loginfo)
+        with open('config.json', encoding='utf-8') as configJsonFile:
+            config.config = json.loads(configJsonFile.read())
+            if len(config.config["rules"]):
+                chatrooms = itchat.get_chatrooms(update=True)[1:]
+                for rule in config.config["rules"]:
+                    if len(rule["groupRules"]):
+                        for groupRule in rule["groupRules"]:
+                            for chatroom in chatrooms:
+                                groupInfo=utils.removeEmoji(chatroom["NickName"])
+                                if(groupRule["groupName"]==groupInfo):
+                                    groupRule["groupName"]=chatroom["UserName"]
+                                    chatroom = itchat.update_chatroom(chatroom['UserName'])
+                                    for friend in chatroom['MemberList']:
+                                        userInfo=friend["NickName"]
+                                        if len(groupRule["users"]):
+                                            for user in groupRule["users"]:
+                                                if userInfo.find(user['userName'])>=0:
+                                                    user['userName']=friend["UserName"]
+            printfInfo(self,config.config)
     except Exception as e:
-        loginfo="异常"+"接收时间"+e.args
-        printfInfo(loginfo)
+        loginfo="配置文件异常" +e.args
+        printfInfo(self,loginfo)
+
+def start_receiving(self):
+    def maintain_loop(self,threadInfo):
+        while itchat.originInstance.alive:
+            msgList, contactList = itchat.get_msg()
+            if msgList:
+                for m in msgList:
+                    loginfo=threadInfo+"接收到消息----"+"接收时间"+time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"----"+m['Content']
+                    printfInfo(self,loginfo)
+                    try:
+                        vaildAndAutoSend(self,m)
+                    except Exception as e:
+                        loginfo=e.args
+                        printfInfo(self,loginfo)
+
+    receiveThread1 = threading.Thread(target=maintain_loop,args=(self,"receiveThread1"))
+    receiveThread1.setDaemon(True)
+    receiveThread1.start()
+
+def vaildAndAutoSend(self,m):
+    if '@@' in m["FromUserName"]:
+        r = re.match('(@[0-9a-z]*?):<br/>(.*)$', m['Content'])
+        if r:
+            actualUserName, content = r.groups()
+        m['ActualUserName'] = actualUserName
+        result = vaildGroupsRules(m,config.config)
+        if(result):
+            itchat.send(result, m['FromUserName'])
+            loginfo="回复消息----"+"回复时间"+time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"消息内容："+result
+            printfInfo(self,loginfo)
+
 
 # 验证规则是否进行自动回复
 def vaildGroupsRules(msg,config):
@@ -40,8 +79,7 @@ def vaildGroupsRules(msg,config):
 
 # 验证群规则
 def vaildGroup(msg,groupRule):
-    nickName=app.removeEmoji(msg["User"]["NickName"])
-    if(nickName == groupRule["groupName"]):
+    if(msg["FromUserName"] == groupRule["groupName"]):
         return vaildTimeRange(msg,groupRule)
     else:
         return False
@@ -82,19 +120,16 @@ def vaildUser(msg,groupRule):
     result = False
     if len(groupRule["users"]):
         for user in groupRule["users"]:
-            actualNickName=msg['ActualNickName']
-            if actualNickName.find(user['userName'])>=0:
+            if msg['ActualUserName'] and msg['ActualUserName']==user['userName']:
                 result = user["replyMsg"]
                 break
     return result
 
-def printfInfo(loginfo):
-    app.logTextBoxInsert(loginfo)
+def printfInfo(self,loginfo):
+    self.logTextBoxInsert(loginfo)
     logger.info(loginfo)
 
-
 if __name__=='__main__':
-    app = robotui.Application()
+    robotui_instance = robotui.Application()
     # to do
-    app.mainloop()
-
+    robotui_instance.mainloop()

@@ -1,4 +1,7 @@
+import os
 import itchat
+import robot
+import utils,config
 from tkinter import *
 
 class Application(Frame):
@@ -11,8 +14,10 @@ class Application(Frame):
     def createWidgets(self):
         # operateFrame
         self.operateFrame=Frame(self)
+        self.btnLoad=Button(self.operateFrame,text="加载",width=7,command=self.loadInfo)
         self.btnLogin=Button(self.operateFrame,text="登录",width=7,command=self.startLogin)
         self.btnLogout=Button(self.operateFrame,text="退出",width=7,command=self.logout)
+        self.btnLoad.pack(side= RIGHT)
         self.btnLogin.pack(side= RIGHT)
         # loginFrame
         self.loginFrameLeft=Frame(self.operateFrame)
@@ -65,7 +70,7 @@ class Application(Frame):
 
     def startLogin(self):
         # 通过扫描二维码登录微信网页版。
-        itchat.auto_login(True,loginCallback=self.loginCallback,exitCallback=self.exitCallback)
+        itchat.auto_login(loginCallback=self.loginCallback,exitCallback=self.exitCallback)
         itchat.run(False, False)
 
     def logTextBoxInsert(self,msg):
@@ -77,6 +82,10 @@ class Application(Frame):
 
     # 登录成功回调
     def loginCallback(self):
+        robot.configByWxServerInfo(self)
+        robot.start_receiving(self)
+        utils.clear_screen()
+        os.remove(config.DEFAULT_QR)
         self.btnLogin.pack_forget()
         self.btnLogout.pack(side= RIGHT)
         self.loginInfo.delete(0,END)
@@ -95,10 +104,14 @@ class Application(Frame):
     # 获取所有群主
     def getChatrooms(self):
         self.groupInfo.delete(0,END)
-        chatrooms = itchat.get_chatrooms(update=True)[1:]
+        chatrooms = itchat.get_chatrooms(update=False)[1:]
         for chatroom in chatrooms:
             groupInfo=self.removeEmoji(chatroom["NickName"])
             self.groupInfo.insert(0, groupInfo)
+
+    def loadInfo(self):
+        self.getChatrooms()
+        robot.configByWxServerInfo(self)
 
     # 根据群获取成员
     def getMembers(self,event):
