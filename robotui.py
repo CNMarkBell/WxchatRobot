@@ -82,6 +82,8 @@ class Application(Frame):
 
     # 登录成功回调
     def loginCallback(self):
+        curruser=itchat.search_friends()
+        loginfo=curruser["NickName"]+"----登录成功"
         robot.configByWxServerInfo(self)
         robot.start_receiving(self)
         utils.clear_screen()
@@ -89,9 +91,7 @@ class Application(Frame):
         self.btnLogin.pack_forget()
         self.btnLogout.pack(side= RIGHT)
         self.loginInfo.delete(0,END)
-        curruser=itchat.search_friends()
         self.loginInfo.insert(0,curruser["NickName"])
-        loginfo=curruser["NickName"]+"----登录成功"
         self.logTextBoxInsert(loginfo)
         self.getChatrooms()
 
@@ -116,6 +116,7 @@ class Application(Frame):
     # 根据群获取成员
     def getMembers(self,event):
         self.usersInfo.delete(0,END)
+        robot.configByWxServerInfo(self)
         curselection = self.groupInfo.get(self.groupInfo.curselection())
         loginfo="查询群----"+curselection+"----的成员"
         self.logTextBoxInsert(loginfo)
@@ -123,7 +124,6 @@ class Application(Frame):
         for chatroom in chatrooms:
             groupInfo=self.removeEmoji(chatroom["NickName"])
             if(curselection==groupInfo):
-                chatroom = itchat.update_chatroom(chatroom['UserName'])
                 for friend in chatroom['MemberList']:
                     userInfo=self.removeEmoji(friend["NickName"])
                     self.usersInfo.insert(0, userInfo)
