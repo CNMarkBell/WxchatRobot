@@ -70,10 +70,6 @@ def start_receiving(self):
             except:
                 retryCount += 1
                 logger.error(traceback.format_exc())
-                if itchat.originInstance.receivingRetryCount < retryCount:
-                    itchat.originInstance.alive = False
-                else:
-                    time.sleep(1)
         itchat.logout()
         self.exitCallback()
         logger.info('LOG OUT!')
