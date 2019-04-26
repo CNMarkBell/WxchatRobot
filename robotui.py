@@ -125,7 +125,7 @@ class Application(Frame):
             groupInfo=self.removeEmoji(chatroom["NickName"])
             if(curselection==groupInfo):
                 for friend in chatroom['MemberList']:
-                    userInfo=self.removeEmoji(friend["NickName"])
+                    userInfo=utils.removeEmoji(friend["NickName"])+"--"+utils.removeEmoji(friend["DisplayName"])
                     self.usersInfo.insert(0, userInfo)
         loginfo="查询群----"+curselection+"----的成员结束"
         self.logTextBoxInsert(loginfo)

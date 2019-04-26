@@ -20,16 +20,19 @@ def configByWxServerInfo(self):
                     if len(rule["groupRules"]):
                         for groupRule in rule["groupRules"]:
                             for chatroom in chatrooms:
+                                chatroom = itchat.update_chatroom(chatroom['UserName'])
                                 groupInfo=utils.removeEmoji(chatroom["NickName"])
                                 if(groupRule["groupName"]==groupInfo):
                                     groupRule["groupName"]=chatroom["UserName"]
-                                    chatroom = itchat.update_chatroom(chatroom['UserName'])
                                     for friend in chatroom['MemberList']:
-                                        userInfo=friend["NickName"]
+                                        displayName=utils.removeEmoji(friend["DisplayName"])
+                                        nickName=utils.removeEmoji(friend["NickName"])
                                         if len(groupRule["users"]):
                                             for user in groupRule["users"]:
-                                                if userInfo.find(user['userName'])>=0:
+                                                if displayName.find(user['userName'])>=0 or nickName.find(user['userName'])>=0:
                                                     user['userName']=friend["UserName"]
+        loginfo=str(config.config)
+        printfInfo(self,loginfo)
     except Exception as e:
         loginfo="配置文件异常" +e.args
         printfInfo(self,loginfo)
@@ -49,7 +52,12 @@ def start_receiving(self):
                     msgList, contactList = itchat.get_msg()
                     if msgList:
                         for m in msgList:
-                            loginfo=threadInfo+"接收到消息----"+"接收时间"+time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"----"+m['Content']
+                            ct = time.time()
+                            local_time = time.localtime(ct)
+                            data_head = time.strftime("%Y-%m-%d %H:%M:%S", local_time)
+                            data_secs = (ct - int(ct)) * 1000
+                            time_stamp = "%s.%03d" % (data_head, data_secs)
+                            loginfo=threadInfo+"接收到消息----"+"接收时间"+time_stamp+"----"+m['Content']
                             printfInfo(self,loginfo)
                             try:
                                 vaildAndAutoSend(self,m)
@@ -82,7 +90,12 @@ def vaildAndAutoSend(self,m):
         result = vaildGroupsRules(m,config.config)
         if(result):
             itchat.send(result, m['FromUserName'])
-            loginfo="回复消息----"+"回复时间"+time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"消息内容："+result
+            ct = time.time()
+            local_time = time.localtime(ct)
+            data_head = time.strftime("%Y-%m-%d %H:%M:%S", local_time)
+            data_secs = (ct - int(ct)) * 1000
+            time_stamp = "%s.%03d" % (data_head, data_secs)
+            loginfo="回复消息----"+"回复时间"+time_stamp+"消息内容："+result
             printfInfo(self,loginfo)
 
 
