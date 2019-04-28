@@ -161,3 +161,10 @@ def update_info_dict(oldInfoDict, newInfoDict):
 def removeEmoji(text):
     highpoints = re.compile(u'[\U00010000-\U0010ffff]')
     return highpoints.sub(u'',text)
+
+def vaildName(source,configName):
+    configNames=configName.split("-")
+    for name in configNames:
+        if not source.find(name)>=0:
+            return False
+    return True

@@ -11,6 +11,7 @@ logger = logging.getLogger()
 startNowYMD = time.strftime("%Y-%m-%d", time.localtime())
 logging.basicConfig(level=logging.INFO,filename='info.log',filemode='w')
 def configByWxServerInfo(self):
+    self.cleanInfo()
     try:
         with open('config.json', encoding='utf-8') as configJsonFile:
             config.config = json.loads(configJsonFile.read())
@@ -22,15 +23,26 @@ def configByWxServerInfo(self):
                             for chatroom in chatrooms:
                                 chatroom = itchat.update_chatroom(chatroom['UserName'])
                                 groupInfo=utils.removeEmoji(chatroom["NickName"])
-                                if(groupRule["groupName"]==groupInfo):
+                                if(utils.vaildName(groupInfo,groupRule["groupName"])):
+                                    self.setGroupInfo(groupInfo)
                                     groupRule["groupName"]=chatroom["UserName"]
                                     for friend in chatroom['MemberList']:
                                         displayName=utils.removeEmoji(friend["DisplayName"])
                                         nickName=utils.removeEmoji(friend["NickName"])
                                         if len(groupRule["users"]):
                                             for user in groupRule["users"]:
-                                                if displayName.find(user['userName'])>=0 or nickName.find(user['userName'])>=0:
-                                                    user['userName']=friend["UserName"]
+                                                if displayName:
+                                                    if utils.vaildName(displayName,user['userName']):
+                                                        usersInfo="--"+nickName+"--"+displayName
+                                                        self.setUsersInfo(usersInfo)
+                                                        user['userName']=friend["UserName"]
+                                                elif nickName:
+                                                    if utils.vaildName(nickName,user['userName']):
+                                                        usersInfo="--"+nickName+"--"+displayName
+                                                        self.setUsersInfo(usersInfo)
+                                                        user['userName']=friend["UserName"]
+                                    self.setUsersInfo(groupInfo)
+
         loginfo=str(config.config)
         printfInfo(self,loginfo)
     except Exception as e:
@@ -45,7 +57,11 @@ def start_receiving(self):
             try:
                 i = itchat.sync_check()
                 if i is None:
-                    self.alive = False
+                    itchat.originInstance.receivingRetryCount=itchat.originInstance.receivingRetryCount-1
+                    if itchat.originInstance.receivingRetryCount<0:
+                        self.alive = False
+                        itchat.logout()
+                        self.exitCallback()
                 elif i == '0':
                     pass
                 else:
@@ -73,9 +89,9 @@ def start_receiving(self):
         itchat.logout()
         self.exitCallback()
         logger.info('LOG OUT!')
-    receiveThread1 = threading.Thread(target=maintain_loop,args=(self,"receiveThread1"))
-    receiveThread1.setDaemon(True)
-    receiveThread1.start()
+    receiveThread = threading.Thread(target=maintain_loop,args=(self,"receiveThread"))
+    receiveThread.setDaemon(True)
+    receiveThread.start()
 
 def vaildAndAutoSend(self,m):
     if '@@' in m["FromUserName"]:
