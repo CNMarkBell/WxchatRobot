@@ -14,7 +14,7 @@ class Application(Frame):
     def createWidgets(self):
         # operateFrame
         self.operateFrame=Frame(self)
-        self.btnLoad=Button(self.operateFrame,text="加载",width=7,command=self.loadInfo)
+        self.btnLoad=Button(self.operateFrame,text="重新加载",width=7,command=self.loadConfigInfo)
         self.btnLogin=Button(self.operateFrame,text="登录",width=7,command=self.startLogin)
         self.btnLogout=Button(self.operateFrame,text="退出",width=7,command=self.logout)
         self.btnLoad.pack(side= RIGHT)
@@ -60,8 +60,6 @@ class Application(Frame):
         self.usersFrame.pack(side=LEFT)
         self.userListFrame.pack(side=BOTTOM,fill=BOTH,pady=20)
 
-        self.groupInfo.bind('<Double-Button-1>',self.getMembers)
-
     def window_init(self):
         self.master.title('微信自动回复程序')
         self.master.geometry("600x600+300+300")
@@ -93,7 +91,6 @@ class Application(Frame):
         self.loginInfo.delete(0,END)
         self.loginInfo.insert(0,curruser["NickName"])
         self.logTextBoxInsert(loginfo)
-        self.getChatrooms()
 
     # 退出登录回调
     def exitCallback(self):
@@ -101,34 +98,21 @@ class Application(Frame):
         self.btnLogin.pack(side= RIGHT)
         self.btnLogout.pack_forget()
 
-    # 获取所有群主
-    def getChatrooms(self):
+    # 设置当前匹配到的群
+    def setGroupInfo(self,groupInfo):
+        self.groupInfo.insert(0, groupInfo)
+
+    # 清理GroupInfo、UsersInfo信息框
+    def cleanInfo(self):
         self.groupInfo.delete(0,END)
-        chatrooms = itchat.get_chatrooms(update=False)[1:]
-        for chatroom in chatrooms:
-            groupInfo=self.removeEmoji(chatroom["NickName"])
-            self.groupInfo.insert(0, groupInfo)
-
-    def loadInfo(self):
-        self.getChatrooms()
-        robot.configByWxServerInfo(self)
-
-    # 根据群获取成员
-    def getMembers(self,event):
         self.usersInfo.delete(0,END)
+
+    def loadConfigInfo(self):
         robot.configByWxServerInfo(self)
-        curselection = self.groupInfo.get(self.groupInfo.curselection())
-        loginfo="查询群----"+curselection+"----的成员"
-        self.logTextBoxInsert(loginfo)
-        chatrooms = itchat.get_chatrooms(update=True)[1:]
-        for chatroom in chatrooms:
-            groupInfo=self.removeEmoji(chatroom["NickName"])
-            if(curselection==groupInfo):
-                for friend in chatroom['MemberList']:
-                    userInfo=utils.removeEmoji(friend["NickName"])+"--"+utils.removeEmoji(friend["DisplayName"])
-                    self.usersInfo.insert(0, userInfo)
-        loginfo="查询群----"+curselection+"----的成员结束"
-        self.logTextBoxInsert(loginfo)
+
+    # 设置当前匹配成员信息
+    def setUsersInfo(self,userInfo):
+        self.usersInfo.insert(0, userInfo)
 
     def removeEmoji(self,text):
         highpoints = re.compile(u'[\U00010000-\U0010ffff]')
