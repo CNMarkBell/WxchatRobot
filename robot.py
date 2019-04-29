@@ -8,13 +8,13 @@ import robotui
 import utils,config
 import requests
 logger = logging.getLogger()
-startNowYMD = time.strftime("%Y-%m-%d", time.localtime())
 logging.basicConfig(level=logging.INFO,filename='info.log',filemode='w')
 def configByWxServerInfo(self):
     self.cleanInfo()
     try:
         with open('config.json', encoding='utf-8') as configJsonFile:
             config.config = json.loads(configJsonFile.read())
+            config.startNowYMD = time.strftime("%Y-%m-%d", time.localtime())
             if len(config.config["rules"]):
                 chatrooms = itchat.get_chatrooms(update=True)
                 for rule in config.config["rules"]:
@@ -68,12 +68,7 @@ def start_receiving(self):
                     msgList, contactList = itchat.get_msg()
                     if msgList:
                         for m in msgList:
-                            ct = time.time()
-                            local_time = time.localtime(ct)
-                            data_head = time.strftime("%Y-%m-%d %H:%M:%S", local_time)
-                            data_secs = (ct - int(ct)) * 1000
-                            time_stamp = "%s.%03d" % (data_head, data_secs)
-                            loginfo=threadInfo+"接收到消息----"+"接收时间"+time_stamp+"----"+m['Content']
+                            loginfo=threadInfo+"接收到消息----"+"接收时间"+utils.getCurrTime()+"----"+m['Content']
                             printfInfo(self,loginfo)
                             try:
                                 vaildAndAutoSend(self,m)
@@ -102,12 +97,7 @@ def vaildAndAutoSend(self,m):
         result = vaildGroupsRules(m,config.config)
         if(result):
             itchat.send(result, m['FromUserName'])
-            ct = time.time()
-            local_time = time.localtime(ct)
-            data_head = time.strftime("%Y-%m-%d %H:%M:%S", local_time)
-            data_secs = (ct - int(ct)) * 1000
-            time_stamp = "%s.%03d" % (data_head, data_secs)
-            loginfo="回复消息----"+"回复时间"+time_stamp+"消息内容："+result
+            loginfo="回复消息----"+"回复时间"+utils.getCurrTime()+"消息内容："+result
             printfInfo(self,loginfo)
 
 
@@ -136,9 +126,9 @@ def vaildTimeRange(msg,groupRule):
     nowHM = time.strftime("%H:%M%S", time.localtime())
     if len(groupRule["timeRanges"]):
         for groupTime in groupRule["timeRanges"]:
-            if startNowYMD!=nowYMD:
+            if nowYMD!=config.startNowYMD:
                 groupTime["sendCcount"]=0
-                startNowYMD = time.strftime("%Y-%m-%d", time.localtime())
+                config.startNowYMD = time.strftime("%Y-%m-%d", time.localtime())
             times = groupTime["timeRange"].split("-")
             if(times[0] <= nowHM <= times[1]):
                 result = vaildUser(msg,groupRule)
