@@ -114,10 +114,6 @@ class Application(Frame):
     def setUsersInfo(self,userInfo):
         self.usersInfo.insert(0, userInfo)
 
-    def removeEmoji(self,text):
-        highpoints = re.compile(u'[\U00010000-\U0010ffff]')
-        return highpoints.sub(u'',text)
-
     # 退出登录
     def logout(self):
         itchat.logout()
