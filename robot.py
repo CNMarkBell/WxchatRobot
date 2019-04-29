@@ -16,7 +16,7 @@ def configByWxServerInfo(self):
         with open('config.json', encoding='utf-8') as configJsonFile:
             config.config = json.loads(configJsonFile.read())
             if len(config.config["rules"]):
-                chatrooms = itchat.get_chatrooms(update=True)[1:]
+                chatrooms = itchat.get_chatrooms(update=True)
                 for rule in config.config["rules"]:
                     if len(rule["groupRules"]):
                         for groupRule in rule["groupRules"]:
@@ -138,6 +138,8 @@ def vaildTimeRange(msg,groupRule):
         for groupTime in groupRule["timeRanges"]:
             if startNowYMD!=nowYMD:
                 groupTime["sendCcount"]=0
+                startNowYMD = time.strftime("%Y-%m-%d", time.localtime())
+
             times = groupTime["timeRange"].split("-")
             if(times[0] <= nowHM <= times[1]):
                 result = vaildUser(msg,groupRule)
