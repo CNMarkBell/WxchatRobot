@@ -168,3 +168,4 @@ def vaildName(source,configName):
         if not source.find(name)>=0:
             return False
     return True
+
