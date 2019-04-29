@@ -139,7 +139,6 @@ def vaildTimeRange(msg,groupRule):
             if startNowYMD!=nowYMD:
                 groupTime["sendCcount"]=0
                 startNowYMD = time.strftime("%Y-%m-%d", time.localtime())
-
             times = groupTime["timeRange"].split("-")
             if(times[0] <= nowHM <= times[1]):
                 result = vaildUser(msg,groupRule)
