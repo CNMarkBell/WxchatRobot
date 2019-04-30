@@ -96,7 +96,7 @@ def vaildAndAutoSend(self,m):
         m['ActualUserName'] = actualUserName
         result = vaildGroupsRules(m,config.config)
         if(result):
-            itchat.send(result, m['FromUserName'])
+            itchat.send_msg(result, m['FromUserName'])
             loginfo="回复消息----"+"回复时间"+utils.getCurrTime()+"消息内容："+result
             printfInfo(self,loginfo)
 
