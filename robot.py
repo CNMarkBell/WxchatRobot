@@ -68,8 +68,6 @@ def start_receiving(self):
                     msgList, contactList = itchat.get_msg()
                     if msgList:
                         for m in msgList:
-                            loginfo=threadInfo+"接收到消息----"+"接收时间"+utils.getCurrTime()+"----"+m['Content']
-                            printfInfo(self,loginfo)
                             try:
                                 vaildAndAutoSend(self,m)
                             except Exception as e:
@@ -97,7 +95,9 @@ def vaildAndAutoSend(self,m):
         result = vaildGroupsRules(m,config.config)
         if(result):
             itchat.send_msg(result, m['FromUserName'])
-            loginfo="回复消息----"+"回复时间"+utils.getCurrTime()+"消息内容："+result
+            loginfo="接收到消息----"+m['Content']
+            printfInfo(self,loginfo)
+            loginfo="回复消息----"+"消息内容："+result
             printfInfo(self,loginfo)
 
 
