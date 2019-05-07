@@ -15,34 +15,30 @@ def configByWxServerInfo(self):
         with open('config.json', encoding='utf-8') as configJsonFile:
             config.config = json.loads(configJsonFile.read())
             config.startNowYMD = time.strftime("%Y-%m-%d", time.localtime())
-            if len(config.config["rules"]):
+            if(config.config["groupRule"]):
                 chatrooms = itchat.get_chatrooms(update=True)
-                for rule in config.config["rules"]:
-                    if len(rule["groupRules"]):
-                        for groupRule in rule["groupRules"]:
-                            for chatroom in chatrooms:
-                                chatroom = itchat.update_chatroom(chatroom['UserName'])
-                                groupInfo=utils.removeEmoji(chatroom["NickName"])
-                                if(utils.vaildName(groupInfo,groupRule["groupName"])):
-                                    self.setGroupInfo(groupInfo)
-                                    groupRule["groupName"]=chatroom["UserName"]
-                                    for friend in chatroom['MemberList']:
-                                        displayName=utils.removeEmoji(friend["DisplayName"])
-                                        nickName=utils.removeEmoji(friend["NickName"])
-                                        if len(groupRule["users"]):
-                                            for user in groupRule["users"]:
-                                                if displayName:
-                                                    if utils.vaildName(displayName,user['userName']):
-                                                        usersInfo="--"+nickName+"--"+displayName
-                                                        self.setUsersInfo(usersInfo)
-                                                        user['userName']=friend["UserName"]
-                                                elif nickName:
-                                                    if utils.vaildName(nickName,user['userName']):
-                                                        usersInfo="--"+nickName+"--"+displayName
-                                                        self.setUsersInfo(usersInfo)
-                                                        user['userName']=friend["UserName"]
-                                    self.setUsersInfo(groupInfo)
-
+                for chatroom in chatrooms:
+                    chatroom = itchat.update_chatroom(chatroom['UserName'])
+                    groupInfo=utils.removeEmoji(chatroom["NickName"])
+                    if(utils.vaildName(groupInfo,config.config["groupRule"]["groupName"],config.config["groupRule"]["likeMatching"])):
+                        self.setGroupInfo(groupInfo)
+                        config.config["groupRule"]["groupName"]=chatroom["UserName"]
+                        for friend in chatroom['MemberList']:
+                            displayName=utils.removeEmoji(friend["DisplayName"])
+                            nickName=utils.removeEmoji(friend["NickName"])
+                            if len(config.config["groupRule"]["users"]):
+                                for user in config.config["groupRule"]["users"]:
+                                    if displayName:
+                                        if utils.vaildName(displayName,user['userName'],user['likeMatching']):
+                                            usersInfo="--"+nickName+"--"+displayName
+                                            self.setUsersInfo(usersInfo)
+                                            user['userName']=friend["UserName"]
+                                    elif nickName:
+                                        if utils.vaildName(nickName,user['userName'],user['likeMatching']):
+                                            usersInfo="--"+nickName+"--"+displayName
+                                            self.setUsersInfo(usersInfo)
+                                            user['userName']=friend["UserName"]
+                        self.setUsersInfo(groupInfo)
         loginfo=str(config.config)
         printfInfo(self,loginfo)
     except Exception as e:
@@ -87,12 +83,8 @@ def start_receiving(self):
     receiveThread.start()
 
 def vaildAndAutoSend(self,m):
-    if '@@' in m["FromUserName"]:
-        r = re.match('(@[0-9a-z]*?):<br/>(.*)$', m['Content'])
-        if r:
-            actualUserName, content = r.groups()
-        m['ActualUserName'] = actualUserName
-        result = vaildGroupsRules(m,config.config)
+    if m["FromUserName"]==config.config["groupRule"]["groupName"]:
+        result = vaildTimeRange(m,config.config["groupRule"])
         if(result):
             itchat.send_msg(result, m['FromUserName'])
             loginfo="接收到消息----"+m['Content']
@@ -100,67 +92,31 @@ def vaildAndAutoSend(self,m):
             loginfo="回复消息----"+"消息内容："+result
             printfInfo(self,loginfo)
 
-
-# 验证规则是否进行自动回复
-def vaildGroupsRules(msg,config):
-    if len(config["rules"]):
-        for rule in config["rules"]:
-            if len(rule["groupRules"]):
-                for groupRule in rule["groupRules"]:
-                    return vaildGroup(msg,groupRule)
-            else:
-                return False
-    else:
-        return False
-
-# 验证群规则
-def vaildGroup(msg,groupRule):
-    if(msg["FromUserName"] == groupRule["groupName"]):
-        return vaildTimeRange(msg,groupRule)
-    else:
-        return False
-
 # 验证时间区间
 def vaildTimeRange(msg,groupRule):
     nowYMD = time.strftime("%Y-%m-%d", time.localtime())
     nowHM = time.strftime("%H:%M%S", time.localtime())
-    if len(groupRule["timeRanges"]):
-        for groupTime in groupRule["timeRanges"]:
-            if nowYMD!=config.startNowYMD:
-                groupTime["sendCcount"]=0
-                config.startNowYMD = time.strftime("%Y-%m-%d", time.localtime())
-            times = groupTime["timeRange"].split("-")
-            if(times[0] <= nowHM <= times[1]):
-                result = vaildUser(msg,groupRule)
-                if(groupRule["sendOnlyOne"]):
-                    if(groupTime["sendCcount"]<=0):
-                        if result:
-                            groupTime["sendCcount"]=groupTime["sendCcount"]+1
-                            return result
-                            break
-                        else:
-                            return result
-                            break
-                else:
-                    if result:
-                        groupTime["sendCcount"]=groupTime["sendCcount"]+1
-                        return result
-                        break
-                    else:
-                        return result
-                        break
-    else:
-        return False
-
-# 验证发送者并返回回复消息
-def vaildUser(msg,groupRule):
-    result = False
     if len(groupRule["users"]):
         for user in groupRule["users"]:
-            if msg['ActualUserName'] and msg['ActualUserName']==user['userName']:
-                result = user["replyMsg"]
-                break
-    return result
+            if nowYMD!=config.startNowYMD:
+                user["sendCcount"]=0
+                config.startNowYMD = time.strftime("%Y-%m-%d", time.localtime())
+            times = user["timeRange"].split("-")
+            if(times[0] <= nowHM <= times[1]):
+                if(groupRule["sendOnlyOne"]):
+                    if(user["sendCcount"]<=0):
+                        if msg['Content'] and user['userName'] in msg['Content']:
+                            result = user["replyMsg"]
+                            user["sendCcount"]=user["sendCcount"]+1
+                            return result
+                else:
+                    if msg['Content'] and user['userName'] in msg['Content']:
+                        result = user["replyMsg"]
+                        user["sendCcount"]=user["sendCcount"]+1
+                        return result
+        return False
+    else:
+        return False
 
 def printfInfo(self,loginfo):
     self.logTextBoxInsert(utils.removeEmoji(loginfo))
