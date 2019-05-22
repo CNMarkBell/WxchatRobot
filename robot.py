@@ -104,16 +104,17 @@ def vaildTimeRange(msg,groupRule):
             times = user["timeRange"].split("-")
             if(times[0] <= nowHM <= times[1]):
                 if(groupRule["sendOnlyOne"]):
-                    if(user["sendCcount"]<=0):
-                        if msg['Content'] and user['userName'] in msg['Content']:
-                            result = user["replyMsg"]
-                            user["sendCcount"]=user["sendCcount"]+1
-                            return result
-                else:
-                    if msg['Content'] and user['userName'] in msg['Content']:
+                    if(user["sendCcount"]<=1):
                         result = user["replyMsg"]
                         user["sendCcount"]=user["sendCcount"]+1
                         return result
+                        #if msg['Content'] and user['userName'] in msg['Content']:
+                else:
+                    result = user["replyMsg"]
+                    user["sendCcount"]=user["sendCcount"]+1
+                    return result
+                    #if msg['Content'] and user['userName'] in msg['Content']:
+
         return False
     else:
         return False
